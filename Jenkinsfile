@@ -44,7 +44,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 sh '''
-                    docker push "$IMAGE_NAME"
+                    docker push shabdoc/streamlit-app:${GIT_COMMIT}
                 '''
             }
         }
