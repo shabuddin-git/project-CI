@@ -19,7 +19,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                    docker build -t "$IMAGE_NAME" .
+                    docker build -t shabdoc/streamlit-app:${GIT_COMMIT} .
                 '''
             }
         }
