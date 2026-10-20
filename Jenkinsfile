@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'shabdoc/streamlit-app:${GIT_COMMIT}'
+        IMAGE_NAME = "shabdoc/streamlit-app:${GIT_COMMIT}"
         EKS_CLUSTER_NAME = "shab-eks-cluster"
         AWS_REGION = "us-east-2"
     }
@@ -19,7 +19,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                    docker build -t shabdoc/streamlit-app:${GIT_COMMIT} .
+                    docker build -t ${IMAGE_NAME} .
                 '''
             }
         }
@@ -44,7 +44,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 sh '''
-                    docker push shabdoc/streamlit-app:${GIT_COMMIT}
+                    docker push  ${IMAGE_NAME}
                 '''
             }
         }
