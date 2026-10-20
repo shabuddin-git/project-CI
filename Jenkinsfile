@@ -1,8 +1,11 @@
+
 pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'shabdoc/streamlit-app:latest'
+        IMAGE_NAME = 'shabdoc/streamlit-app:${GIT_COMMIT}'
+        EKS_CLUSTER_NAME = "shab-eks-cluster"
+        AWS_REGION = "us-east-2"
     }
 
     stages {
@@ -43,6 +46,33 @@ pipeline {
                 sh '''
                     docker push "$IMAGE_NAME"
                 '''
+            }
+        }
+
+        stage('update-kubeconfig') {
+            steps {
+                sh '''
+                    aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}
+                '''
+            }
+        }
+
+        stage('deploy to kubernetes') {
+            steps {
+                withKubeConfig(
+                    caCertificate: '',
+                    clusterName: 'shab-eks-cluster',
+                    contextName: '',
+                    credentialsId: 'kube',
+                    namespace: 'default',
+                    restrictKubeConfigAccess: false,
+                    serverUrl: 'https://FA55DA12F65E1ACAAE69CDB7C5C19AAB.gr7.us-east-2.eks.amazonaws.com'
+                ) {
+                    sh '''
+                        sed -i "s|replace|${IMAGE_NAME}|g" Deployment.yaml
+                        kubectl apply -f Deployment.yaml
+                    '''
+                }
             }
         }
     }
