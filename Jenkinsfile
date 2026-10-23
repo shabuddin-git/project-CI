@@ -66,7 +66,7 @@ pipeline {
                     credentialsId: 'kube',
                     namespace: 'default',
                     restrictKubeConfigAccess: false,
-                    serverUrl: 'https://FA55DA12F65E1ACAAE69CDB7C5C19AAB.gr7.us-east-2.eks.amazonaws.com'
+                    serverUrl: 'https://870E064C617C842B75BFD6A2CE5635C7.gr7.us-east-2.eks.amazonaws.com'
                 ) {
                     sh '''
                         sed -i "s|replace|${IMAGE_NAME}|g" Deployment.yaml
