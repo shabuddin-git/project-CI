@@ -1,0 +1,88 @@
+
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "shabdoc/streamlit-app:${GIT_COMMIT}"
+        EKS_CLUSTER_NAME = "shab-eks-cluster"
+        AWS_REGION = "us-east-2"
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/shabuddin-git/project-CI.git'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                    docker build -t ${IMAGE_NAME} .
+                '''
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-cred',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            -u "$DOCKER_USERNAME" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                    docker push  ${IMAGE_NAME}
+                '''
+            }
+        }
+
+       stage('Update GitOps Deployment') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds',
+                    usernameVariable: 'GIT_USERNAME',
+                    passwordVariable: 'GIT_PASSWORD'
+                )]) {
+                    sh '''
+                        if [ -d "gitops" ]; then
+                            echo "gitops directory exists. Removing it..."
+                            rm -rf gitops
+                        fi
+                        git clone https://$GIT_USERNAME:$GIT_PASSWORD@github.com/shabuddin-git/GitOpsDemo.git gitops
+                        cd gitops/app
+
+                        git config user.email "jenkins@ci.com"
+                        git config user.name "jenkins"
+
+                        # Update image tag
+
+                        sed -i "s|replace|${IMAGE_NAME}|g" Deployment.yaml
+
+                        git add .
+                        git commit -m "Update gameappbackend image to ${IMAGE_NAME}"
+                        git push origin main
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline execution completed.'
+        }
+    }
+}
